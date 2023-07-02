@@ -1,0 +1,52 @@
+Parameters:
+  BucketName:
+    Description: 'Name of the S3 bucket, which must be globally unique'
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9.-]*$
+    ConstraintDescription: Must be a valid bucket name (alphanumeric, periods, and dashes only)
+  BucketRegion:
+    Type: String
+    Description: AWS region for the S3 bucket
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+      - ap-southeast-1
+      - ap-southeast-2
+      - ap-northeast-1
+    ConstraintDescription: Must be a valid AWS region
+  EncryptionType:
+    Description: 'Encryption type for the S3 bucket'
+    Type: String
+    AllowedValues:
+      - AES256
+      - aws:kms
+  KMSMasterKeyID:
+    Description: 'KMS Master Key ID (required if EncryptionType is aws:kms)'
+    Type: String
+    Default: ''
+
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: !Ref EncryptionType
+              KMSMasterKeyID: !If [IsKMSEncryption, !Ref KMSMasterKeyID, !Ref "AWS::NoValue"]
+
+Conditions:
+  IsKMSEncryption: !Equals [!Ref EncryptionType, "aws:kms"]
+
+Outputs:
+  OutputBucketName:
+    Description: 'The name of the created S3 bucket'
+    Value: !Ref BucketName
+  OutputEncryptionType:
+    Description: 'The encryption type used for the S3 bucket'
+    Value: !Ref EncryptionType
+  BucketRegionOutput:
+    Value: !Ref "AWS::Region"
+    Description: AWS region of the created S3 bucket
